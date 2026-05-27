@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "douyin-liked-analyzer"
+version = "0.1.0"
+description = "Local-first video evidence extraction and summarization pipeline."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "typer>=0.9",
+  "PyYAML>=6",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+]
+ai = [
+  "openai>=1.0",
+]
+ocr = [
+  "paddleocr",
+]
+
+[project.scripts]
+video-summary = "video_summarizer.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

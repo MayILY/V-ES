@@ -1,0 +1,32 @@
+input:
+  video_path: null
+
+output:
+  base_dir: outputs
+  overwrite: false
+  keep_intermediate_files: true
+
+ffmpeg:
+  frame_interval_sec: 5
+  audio_sample_rate: 16000
+  max_frame_width: 1280
+
+whisper:
+  model: medium
+  device: auto
+  compute_type: auto
+  language: zh
+  vad_filter: true
+
+ocr:
+  engine: paddleocr
+  language: ch
+  confidence_threshold: 0.5
+  deduplicate: true
+  duplicate_similarity_threshold: 0.9
+
+summary:
+  model: gpt-4.1-mini
+  segment_window_sec: 60
+  output_language: zh
+  include_uncertainties: true

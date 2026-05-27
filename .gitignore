@@ -1,0 +1,36 @@
+# Local media and generated artifacts
+video/
+outputs/
+data/
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.wav
+*.mp3
+*.srt
+
+# Local tools and binaries
+yt-dlp.exe
+*.exe
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build and packaging outputs
+build/
+dist/
+*.egg-info/
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
