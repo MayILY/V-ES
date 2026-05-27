@@ -26,3 +26,17 @@ def test_timeline_merges_transcript_and_ocr_by_window():
 
     assert timeline["events"][0]["transcript"] == "hello"
     assert timeline["events"][0]["ocr_text"] == "title"
+
+
+def test_timeline_merges_visual_descriptions_by_window():
+    timeline = build_timeline(
+        metadata={"duration_sec": 60},
+        transcript={"segments": []},
+        ocr={"frames": []},
+        frames=[{"frame_id": "f1", "timestamp": 6, "image_path": "frames/f1.jpg"}],
+        window_sec=30,
+        frame_descriptions={"frames": [{"frame_id": "f1", "timestamp": 6, "description": "login screen"}]},
+    )
+
+    assert timeline["events"][0]["visual_text"] == "login screen"
+    assert timeline["events"][0]["visual_descriptions"][0]["frame_id"] == "f1"

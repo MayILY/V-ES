@@ -84,10 +84,18 @@ def run_pipeline(
         ocr=ocr_result,
         frames=frames,
         window_sec=config.summary.segment_window_sec,
+        frame_descriptions=frame_descriptions,
     )
     write_json(paths.timeline, timeline)
 
-    summary_status = summarize_timeline(timeline, paths.summary, config.summary, skip=skip_summary)
+    summary_status = summarize_timeline(
+        timeline,
+        paths.summary,
+        config.summary,
+        skip=skip_summary,
+        timeline_summary_path=paths.timeline_summary,
+        chapter_summaries_path=paths.chapter_summaries,
+    )
     write_json(paths.root / "run_status.json", {
         "metadata": "ok",
         "audio": audio_result,
@@ -117,5 +125,7 @@ def run_pipeline(
         "frame_descriptions": paths.frame_descriptions,
         "ocr": paths.ocr,
         "timeline": paths.timeline,
+        "timeline_summary": paths.timeline_summary,
+        "chapter_summaries": paths.chapter_summaries,
         "summary": paths.summary,
     }

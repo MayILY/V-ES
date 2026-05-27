@@ -8,6 +8,7 @@
 - `run`：串联 MVP pipeline，按顺序生成元数据、音频、转录、抽帧、OCR、时间线和 Markdown 总结。
 - 场景与关键帧：`run --scene-detect` 会在 PySceneDetect 可用时生成 `scenes.json`，并基于场景生成 `scene_keyframes.json`；不可用时回退到整段视频场景。
 - GPT Vision：`run --vision` 会对选中的关键帧生成 `frame_descriptions.json`，并受 `--max-frames`、`--max-image-width` 控制。
+- 分层总结：生成 `timeline_summary.md`、`chapter_summaries.md` 和 `final_summary.md`，并把转录、OCR、视觉描述作为证据来源。
 - OCR 和 OpenAI 总结都是可降级步骤：缺少 PaddleOCR、`openai` 包或 `OPENAI_API_KEY` 时不会中断前面的确定性产物。
 
 ## 安装
@@ -57,6 +58,12 @@ video-summary run outputs\merged-demo\merged.mp4 --output outputs\run-merged-dem
 video-summary run outputs\merged-demo\merged.mp4 --output outputs\vision-demo --force --scene-detect --vision --max-frames 20 --max-image-width 1280 --skip-summary
 ```
 
+生成分层总结产物：
+
+```powershell
+video-summary run outputs\merged-demo\merged.mp4 --output outputs\summary-demo --force --scene-detect --vision --max-frames 20
+```
+
 只检查媒体流并输出元数据：
 
 ```powershell
@@ -96,6 +103,8 @@ outputs/<name>/
   frame_descriptions.json
   ocr.json
   timeline_events.json
+  timeline_summary.md
+  chapter_summaries.md
   final_summary.md
   run_status.json
 ```
@@ -128,4 +137,5 @@ git status --short
 - 缺少 `OPENAI_API_KEY` 时会生成带时间线证据的 fallback Markdown，而不是调用模型。
 - PySceneDetect 不可用或检测失败时会写入 fallback 场景，不会中断 pipeline。
 - GPT Vision 默认关闭；缺少 `OPENAI_API_KEY` 或 `openai` 包时会写入跳过状态，不会中断 pipeline。
+- 缺少 `OPENAI_API_KEY` 或使用 `--skip-summary` 时，`timeline_summary.md` 和 `chapter_summaries.md` 仍会用本地证据生成，`final_summary.md` 会写 fallback。
 - 暂不做 HTML report、batch、agent 封装、向量搜索或自动剪辑。

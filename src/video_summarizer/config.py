@@ -41,6 +41,8 @@ class OcrConfig:
 class SummaryConfig:
     model: str = "gpt-4.1-mini"
     segment_window_sec: float = 60.0
+    chapter_window_sec: float = 300.0
+    max_events_per_request: int = 40
     output_language: str = "zh"
     include_uncertainties: bool = True
 

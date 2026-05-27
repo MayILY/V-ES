@@ -9,6 +9,7 @@ def build_timeline(
     ocr: dict[str, Any],
     frames: list[dict[str, Any]],
     window_sec: float,
+    frame_descriptions: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     duration = metadata.get("duration_sec") or _max_end(transcript, frames, ocr)
     if not duration or duration <= 0:
@@ -20,6 +21,7 @@ def build_timeline(
         segments = _segments_in_window(transcript.get("segments", []), start, end)
         ocr_frames = _ocr_in_window(ocr.get("frames", []), start, end)
         frame_items = _frames_in_window(frames, start, end)
+        visual_frames = _vision_in_window((frame_descriptions or {}).get("frames", []), start, end)
         events.append(
             {
                 "start": round(start, 3),
@@ -31,6 +33,8 @@ def build_timeline(
                 ),
                 "ocr_frames": ocr_frames,
                 "frames": frame_items,
+                "visual_text": " / ".join(f.get("description", "") for f in visual_frames if f.get("description")),
+                "visual_descriptions": visual_frames,
                 "event_summary": "",
             }
         )
@@ -50,6 +54,10 @@ def _ocr_in_window(frames: list[dict[str, Any]], start: float, end: float) -> li
 
 def _frames_in_window(frames: list[dict[str, Any]], start: float, end: float) -> list[dict[str, Any]]:
     return [f for f in frames if start <= float(f.get("timestamp", 0)) < end]
+
+
+def _vision_in_window(frames: list[dict[str, Any]], start: float, end: float) -> list[dict[str, Any]]:
+    return [f for f in frames if start <= float(f.get("timestamp", 0)) < end and f.get("description")]
 
 
 def _max_end(transcript: dict[str, Any], frames: list[dict[str, Any]], ocr: dict[str, Any]) -> float:
