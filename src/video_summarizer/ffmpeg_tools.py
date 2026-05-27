@@ -116,6 +116,39 @@ def extract_frames(
     return {"status": "ok", "frames": frames, "frame_count": len(frames)}
 
 
+def merge_audio_video(video_file: Path, audio_file: Path, output_file: Path, force: bool) -> dict[str, Any]:
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    if output_file.exists() and not force:
+        raise FileExistsError(f"Output already exists: {output_file}. Use --force to overwrite.")
+
+    command = [
+        "ffmpeg",
+        "-y" if force else "-n",
+        "-i",
+        str(video_file),
+        "-i",
+        str(audio_file),
+        "-map",
+        "0:v:0",
+        "-map",
+        "1:a:0",
+        "-c:v",
+        "copy",
+        "-c:a",
+        "aac",
+        "-shortest",
+        str(output_file),
+    ]
+    result = _run(command, allow_failure=True)
+    if result.returncode != 0:
+        return {
+            "status": "failed",
+            "path": str(output_file),
+            "error": result.stderr.strip() or result.stdout.strip(),
+        }
+    return {"status": "ok", "path": str(output_file)}
+
+
 def _run(command: list[str], allow_failure: bool = False) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0 and not allow_failure:

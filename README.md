@@ -29,6 +29,24 @@ python -m pip install -e ".[ocr]"
 video-summary --help
 ```
 
+真实 Douyin 素材建议按这个顺序处理：
+
+```powershell
+video-summary scan video --output outputs\scan-demo --force
+```
+
+查看 `outputs\scan-demo\candidate_pairs.json`，选择一组 `video_path` 和 `audio_path` 后合并：
+
+```powershell
+video-summary merge "video\<video-only文件>.mp4" "video\<audio-only文件>.mp4" --output outputs\merged-demo\merged.mp4 --force
+```
+
+再对合并后的文件运行 pipeline：
+
+```powershell
+video-summary run outputs\merged-demo\merged.mp4 --output outputs\run-merged-demo --force --skip-summary
+```
+
 只检查媒体流并输出元数据：
 
 ```powershell
@@ -69,6 +87,18 @@ outputs/<name>/
   run_status.json
 ```
 
+扫描和合并会额外生成：
+
+```text
+outputs/scan-demo/
+  media_scan.json
+  candidate_pairs.json
+
+outputs/merged-demo/
+  merged.mp4
+  merge_status.json
+```
+
 ## 验证
 
 ```powershell
@@ -79,6 +109,8 @@ git status --short
 ## 已知限制
 
 - 当前不自动配对 audio-only 和 video-only 文件，只按单个输入文件处理。
+- `scan` 只生成候选配对，不会自动批量合并所有文件。
+- `merge` 需要手动指定一个 video-only 文件和一个 audio-only 文件。
 - PaddleOCR 未安装时会输出空 OCR 结构并记录跳过原因。
 - 缺少 `OPENAI_API_KEY` 时会生成带时间线证据的 fallback Markdown，而不是调用模型。
 - 暂不做 PySceneDetect、GPT Vision、HTML report、batch 和 agent 封装。
