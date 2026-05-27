@@ -46,12 +46,32 @@ class SummaryConfig:
 
 
 @dataclass
+class SceneDetectionConfig:
+    enabled: bool = False
+    threshold: float = 27.0
+    min_scene_len_sec: float = 2.0
+    max_keyframes_per_scene: int = 3
+    duplicate_similarity_threshold: float = 0.98
+
+
+@dataclass
+class VisionConfig:
+    enabled: bool = False
+    model: str = "gpt-4.1-mini"
+    max_frames: int = 80
+    max_image_width: int = 1280
+    detail: str = "low"
+
+
+@dataclass
 class Config:
     output: OutputConfig = field(default_factory=OutputConfig)
     ffmpeg: FfmpegConfig = field(default_factory=FfmpegConfig)
     whisper: WhisperConfig = field(default_factory=WhisperConfig)
     ocr: OcrConfig = field(default_factory=OcrConfig)
     summary: SummaryConfig = field(default_factory=SummaryConfig)
+    scene_detection: SceneDetectionConfig = field(default_factory=SceneDetectionConfig)
+    vision: VisionConfig = field(default_factory=VisionConfig)
 
 
 def load_config(path: Optional[Path] = None) -> Config:
@@ -71,6 +91,8 @@ def load_config(path: Optional[Path] = None) -> Config:
     _merge_dataclass(cfg.whisper, raw.get("whisper", {}))
     _merge_dataclass(cfg.ocr, raw.get("ocr", {}))
     _merge_dataclass(cfg.summary, raw.get("summary", {}))
+    _merge_dataclass(cfg.scene_detection, raw.get("scene_detection", {}))
+    _merge_dataclass(cfg.vision, raw.get("vision", {}))
     if isinstance(cfg.output.base_dir, str):
         cfg.output.base_dir = Path(cfg.output.base_dir)
     return cfg

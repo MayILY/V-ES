@@ -91,12 +91,24 @@ def run(
     config: Optional[Path] = typer.Option(None, "--config", help="Optional config.yaml path."),
     force: bool = typer.Option(False, "--force", help="Overwrite existing generated files."),
     frame_interval: Optional[float] = typer.Option(None, "--frame-interval", help="Seconds between sampled frames."),
+    scene_detect: bool = typer.Option(False, "--scene-detect", help="Use PySceneDetect when available, with fallback."),
+    vision: bool = typer.Option(False, "--vision", help="Use OpenAI vision on selected keyframes when available."),
+    max_frames: Optional[int] = typer.Option(None, "--max-frames", help="Maximum selected keyframes to send to vision."),
+    max_image_width: Optional[int] = typer.Option(None, "--max-image-width", help="Maximum image width for vision inputs."),
     skip_summary: bool = typer.Option(False, "--skip-summary", help="Skip OpenAI summary generation."),
 ) -> None:
     """Run the MVP pipeline for one local media file."""
     cfg = load_config(config)
     if frame_interval is not None:
         cfg.ffmpeg.frame_interval_sec = frame_interval
+    if scene_detect:
+        cfg.scene_detection.enabled = True
+    if vision:
+        cfg.vision.enabled = True
+    if max_frames is not None:
+        cfg.vision.max_frames = max_frames
+    if max_image_width is not None:
+        cfg.vision.max_image_width = max_image_width
     outputs = run_pipeline(
         input_file=input_file,
         output_dir=output,

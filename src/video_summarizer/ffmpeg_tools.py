@@ -79,6 +79,9 @@ def extract_frames(
     force: bool,
 ) -> dict[str, Any]:
     frames_dir.mkdir(parents=True, exist_ok=True)
+    if force:
+        for stale_frame in frames_dir.glob("frame_*.jpg"):
+            stale_frame.unlink()
     pattern = frames_dir / "frame_%06d.jpg"
     scale_filter = f"fps=1/{config.frame_interval_sec},scale='min({config.max_frame_width},iw)':-2"
     command = [

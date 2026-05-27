@@ -17,6 +17,9 @@ class OutputPaths:
     frames_dir: Path
     frames_metadata: Path
     ocr: Path
+    scenes: Path
+    scene_keyframes: Path
+    frame_descriptions: Path
     timeline: Path
     summary: Path
     run_log: Path
@@ -33,6 +36,9 @@ def build_output_paths(input_file: Path, output_dir: Path | None, config: Config
         frames_dir=root / "frames",
         frames_metadata=root / "frames.json",
         ocr=root / "ocr.json",
+        scenes=root / "scenes.json",
+        scene_keyframes=root / "scene_keyframes.json",
+        frame_descriptions=root / "frame_descriptions.json",
         timeline=root / "timeline_events.json",
         summary=root / "final_summary.md",
         run_log=root / "run.log",

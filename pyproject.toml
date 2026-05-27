@@ -23,6 +23,13 @@ ai = [
 ocr = [
   "paddleocr",
 ]
+scene = [
+  "scenedetect[opencv]>=0.6",
+]
+vision = [
+  "openai>=1.0",
+  "Pillow>=10",
+]
 
 [project.scripts]
 video-summary = "video_summarizer.main:app"

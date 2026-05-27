@@ -25,6 +25,20 @@ ocr:
   deduplicate: true
   duplicate_similarity_threshold: 0.9
 
+scene_detection:
+  enabled: false
+  threshold: 27.0
+  min_scene_len_sec: 2.0
+  max_keyframes_per_scene: 3
+  duplicate_similarity_threshold: 0.98
+
+vision:
+  enabled: false
+  model: gpt-4.1-mini
+  max_frames: 80
+  max_image_width: 1280
+  detail: low
+
 summary:
   model: gpt-4.1-mini
   segment_window_sec: 60

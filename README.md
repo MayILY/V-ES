@@ -6,6 +6,8 @@
 
 - `inspect`：用 `ffprobe` 生成 `metadata.json`，支持 audio-only / video-only / audio+video 文件。
 - `run`：串联 MVP pipeline，按顺序生成元数据、音频、转录、抽帧、OCR、时间线和 Markdown 总结。
+- 场景与关键帧：`run --scene-detect` 会在 PySceneDetect 可用时生成 `scenes.json`，并基于场景生成 `scene_keyframes.json`；不可用时回退到整段视频场景。
+- GPT Vision：`run --vision` 会对选中的关键帧生成 `frame_descriptions.json`，并受 `--max-frames`、`--max-image-width` 控制。
 - OCR 和 OpenAI 总结都是可降级步骤：缺少 PaddleOCR、`openai` 包或 `OPENAI_API_KEY` 时不会中断前面的确定性产物。
 
 ## 安装
@@ -19,6 +21,8 @@ python -m pip install -e ".[dev]"
 ```powershell
 python -m pip install -e ".[ai]"
 python -m pip install -e ".[ocr]"
+python -m pip install -e ".[scene]"
+python -m pip install -e ".[vision]"
 ```
 
 ## 使用
@@ -45,6 +49,12 @@ video-summary merge "video\<video-only文件>.mp4" "video\<audio-only文件>.mp4
 
 ```powershell
 video-summary run outputs\merged-demo\merged.mp4 --output outputs\run-merged-demo --force --skip-summary
+```
+
+启用场景检测和视觉关键帧描述：
+
+```powershell
+video-summary run outputs\merged-demo\merged.mp4 --output outputs\vision-demo --force --scene-detect --vision --max-frames 20 --max-image-width 1280 --skip-summary
 ```
 
 只检查媒体流并输出元数据：
@@ -81,6 +91,9 @@ outputs/<name>/
   transcript.srt
   frames/
   frames.json
+  scenes.json
+  scene_keyframes.json
+  frame_descriptions.json
   ocr.json
   timeline_events.json
   final_summary.md
@@ -113,4 +126,6 @@ git status --short
 - `merge` 需要手动指定一个 video-only 文件和一个 audio-only 文件。
 - PaddleOCR 未安装时会输出空 OCR 结构并记录跳过原因。
 - 缺少 `OPENAI_API_KEY` 时会生成带时间线证据的 fallback Markdown，而不是调用模型。
-- 暂不做 PySceneDetect、GPT Vision、HTML report、batch 和 agent 封装。
+- PySceneDetect 不可用或检测失败时会写入 fallback 场景，不会中断 pipeline。
+- GPT Vision 默认关闭；缺少 `OPENAI_API_KEY` 或 `openai` 包时会写入跳过状态，不会中断 pipeline。
+- 暂不做 HTML report、batch、agent 封装、向量搜索或自动剪辑。
