@@ -21,6 +21,8 @@ class OutputPaths:
     scene_keyframes: Path
     frame_descriptions: Path
     timeline: Path
+    summary_evidence_json: Path
+    summary_evidence_md: Path
     timeline_summary: Path
     chapter_summaries: Path
     summary: Path
@@ -42,6 +44,8 @@ def build_output_paths(input_file: Path, output_dir: Path | None, config: Config
         scene_keyframes=root / "scene_keyframes.json",
         frame_descriptions=root / "frame_descriptions.json",
         timeline=root / "timeline_events.json",
+        summary_evidence_json=root / "summary_evidence.json",
+        summary_evidence_md=root / "summary_evidence.md",
         timeline_summary=root / "timeline_summary.md",
         chapter_summaries=root / "chapter_summaries.md",
         summary=root / "final_summary.md",

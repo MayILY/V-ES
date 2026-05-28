@@ -70,7 +70,7 @@ def run_pipeline(
     scene_keyframes = select_scene_keyframes(scenes_result, frames, config.scene_detection)
     write_json(paths.scene_keyframes, scene_keyframes)
 
-    frame_descriptions = describe_keyframes(scene_keyframes, config.vision)
+    frame_descriptions = describe_keyframes(scene_keyframes, config.vision, config.llm, config.llm_cache)
     write_json(paths.frame_descriptions, frame_descriptions)
 
     ocr_result = run_ocr(frames, config.ocr)
@@ -92,11 +92,17 @@ def run_pipeline(
         timeline,
         paths.summary,
         config.summary,
+        llm_config=config.llm,
+        evidence_config=config.evidence,
+        llm_cache_config=config.llm_cache,
         skip=skip_summary,
         timeline_summary_path=paths.timeline_summary,
         chapter_summaries_path=paths.chapter_summaries,
+        summary_evidence_json_path=paths.summary_evidence_json,
+        summary_evidence_md_path=paths.summary_evidence_md,
     )
-    write_json(paths.root / "run_status.json", {
+    run_status_path = paths.root / "run_status.json"
+    write_json(run_status_path, {
         "metadata": "ok",
         "audio": audio_result,
         "transcript": {"status": transcript.get("status")},
@@ -109,9 +115,19 @@ def run_pipeline(
         "vision": {
             "status": frame_descriptions.get("status"),
             "reason": frame_descriptions.get("reason"),
+            "enabled": frame_descriptions.get("enabled"),
+            "called": frame_descriptions.get("called"),
+            "call_count": frame_descriptions.get("call_count"),
+            "cache_mode": frame_descriptions.get("cache_mode"),
+            "cache_hit_count": frame_descriptions.get("cache_hit_count"),
+            "cache_miss_count": frame_descriptions.get("cache_miss_count"),
+            "cache_write_count": frame_descriptions.get("cache_write_count"),
+            "provider": frame_descriptions.get("provider"),
+            "model": frame_descriptions.get("model"),
             "described_frame_count": frame_descriptions.get("described_frame_count"),
         },
         "ocr": {"status": ocr_result.get("status"), "reason": ocr_result.get("reason")},
+        "evidence": summary_status.get("evidence"),
         "summary": summary_status,
     })
 
@@ -125,7 +141,10 @@ def run_pipeline(
         "frame_descriptions": paths.frame_descriptions,
         "ocr": paths.ocr,
         "timeline": paths.timeline,
+        "summary_evidence_json": paths.summary_evidence_json,
+        "summary_evidence_md": paths.summary_evidence_md,
         "timeline_summary": paths.timeline_summary,
         "chapter_summaries": paths.chapter_summaries,
         "summary": paths.summary,
+        "run_status": run_status_path,
     }
