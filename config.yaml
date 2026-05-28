@@ -20,29 +20,110 @@ whisper:
 
 ocr:
   engine: paddleocr
+  version: PP-OCRv5
   language: ch
+  device: cpu
+  model_root: D:\someElse\video_summarizer-models\paddleocr
+  text_detection_model_name: PP-OCRv5_mobile_det
+  text_recognition_model_name: PP-OCRv5_mobile_rec
+  use_doc_orientation_classify: false
+  use_doc_unwarping: false
+  use_textline_orientation: false
   confidence_threshold: 0.5
   deduplicate: true
   duplicate_similarity_threshold: 0.9
 
 scene_detection:
   enabled: false
+  detector: content
   threshold: 27.0
   min_scene_len_sec: 2.0
+  adaptive_threshold: 3.0
+  min_content_val: 15.0
+  window_width: 2
   max_keyframes_per_scene: 3
   duplicate_similarity_threshold: 0.98
 
 vision:
   enabled: false
+  provider: openai
   model: gpt-4.1-mini
   max_frames: 80
   max_image_width: 1280
   detail: low
 
 summary:
-  model: gpt-4.1-mini
+  provider: deepseek
+  model: deepseek-v4-pro
   segment_window_sec: 60
   chapter_window_sec: 300
   max_events_per_request: 40
   output_language: zh
+  summary_style: structured
   include_uncertainties: true
+
+evidence:
+  enabled: true
+  min_text_info_chars: 12
+  preserve_chapter_boundaries: true
+  preserve_numeric_differences: true
+  max_chapter_summary_chars: 1200
+  max_prompt_chars: 12000
+  evidence_schema_version: summary-evidence-v1
+  builder_version: evidence-builder-v1
+  prompt_template_version: summary-prompt-v1
+  event_duplicate_similarity_threshold: 0.92
+
+llm:
+  env_file: .env
+  override_env: false
+  providers:
+    openai:
+      type: openai_compatible
+      base_url: null
+      api_key_env: OPENAI_API_KEY
+      api_key_required: true
+      supports_text: true
+      supports_vision: true
+      vision_format: responses
+    deepseek:
+      type: openai_compatible
+      base_url: https://api.deepseek.com
+      api_key_env: DEEPSEEK_API_KEY
+      api_key_required: true
+      supports_text: true
+      supports_vision: false
+      vision_format: none
+      reasoning_effort: max
+      extra_body:
+        thinking:
+          type: enabled
+    qwen:
+      type: openai_compatible
+      base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api_key_env: DASHSCOPE_API_KEY
+      api_key_required: true
+      supports_text: true
+      supports_vision: false
+      vision_format: none
+    gemini:
+      type: gemini
+      base_url: null
+      api_key_env: GEMINI_API_KEY
+      api_key_required: true
+      supports_text: true
+      supports_vision: false
+      vision_format: none
+    local:
+      type: openai_compatible
+      base_url: http://localhost:11434/v1
+      api_key_env: null
+      api_key_required: false
+      supports_text: true
+      supports_vision: false
+      vision_format: none
+
+llm_cache:
+  mode: read_write
+  dir: outputs/_cache/llm
+  schema_version: llm-cache-v1
