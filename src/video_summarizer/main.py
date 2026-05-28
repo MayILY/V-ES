@@ -1,20 +1,48 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Optional
 
 import typer
 
 from .config import load_config
+from .doctor import format_doctor_report, has_blocking_missing, run_doctor
 from .ffmpeg_tools import merge_audio_video, probe_media
 from .io_utils import write_json
 from .media_scan import scan_directory
+from .ocr_prepare import prepare_ocr
 from .pipeline import inspect_media, run_pipeline
 
 app = typer.Typer(
     help="Local-first video evidence extraction and summarization CLI.",
     no_args_is_help=True,
 )
+
+
+@app.command()
+def doctor(
+    config: Optional[Path] = typer.Option(None, "--config", help="Optional config.yaml path."),
+) -> None:
+    """Check local dependencies for the stable CLI pipeline."""
+    cfg = load_config(config)
+    checks = run_doctor(config=cfg)
+    typer.echo(format_doctor_report(checks))
+    if has_blocking_missing(checks):
+        raise typer.Exit(code=1)
+
+
+@app.command("ocr-prepare")
+def ocr_prepare(
+    config: Optional[Path] = typer.Option(None, "--config", help="Optional config.yaml path."),
+) -> None:
+    """Prepare and smoke-test local PP-OCRv5 mobile OCR models."""
+    cfg = load_config(config)
+    result = prepare_ocr(cfg.ocr)
+    for key, value in result.items():
+        typer.echo(f"{key}: {value}")
+    if result.get("status") != "ok":
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -92,12 +120,20 @@ def run(
     force: bool = typer.Option(False, "--force", help="Overwrite existing generated files."),
     frame_interval: Optional[float] = typer.Option(None, "--frame-interval", help="Seconds between sampled frames."),
     scene_detect: bool = typer.Option(False, "--scene-detect", help="Use PySceneDetect when available, with fallback."),
-    vision: bool = typer.Option(False, "--vision", help="Use OpenAI vision on selected keyframes when available."),
+    vision: bool = typer.Option(False, "--vision", help="Use configured vision provider on selected keyframes when available."),
+    summary_provider: Optional[str] = typer.Option(None, "--summary-provider", help="LLM provider for final summary."),
+    summary_model: Optional[str] = typer.Option(None, "--summary-model", help="LLM model for final summary."),
+    vision_provider: Optional[str] = typer.Option(None, "--vision-provider", help="LLM provider for keyframe vision."),
+    vision_model: Optional[str] = typer.Option(None, "--vision-model", help="LLM model for keyframe vision."),
     max_frames: Optional[int] = typer.Option(None, "--max-frames", help="Maximum selected keyframes to send to vision."),
     max_image_width: Optional[int] = typer.Option(None, "--max-image-width", help="Maximum image width for vision inputs."),
-    skip_summary: bool = typer.Option(False, "--skip-summary", help="Skip OpenAI summary generation."),
+    skip_summary: bool = typer.Option(False, "--skip-summary", help="Skip final LLM summary generation for local smoke/debug runs."),
+    no_llm_cache: bool = typer.Option(False, "--no-llm-cache", help="Disable LLM cache reads and writes."),
+    refresh_llm_cache: bool = typer.Option(False, "--refresh-llm-cache", help="Ignore existing LLM cache and write fresh successful outputs."),
 ) -> None:
     """Run the MVP pipeline for one local media file."""
+    if no_llm_cache and refresh_llm_cache:
+        raise typer.BadParameter("--no-llm-cache and --refresh-llm-cache are mutually exclusive.")
     cfg = load_config(config)
     if frame_interval is not None:
         cfg.ffmpeg.frame_interval_sec = frame_interval
@@ -105,10 +141,22 @@ def run(
         cfg.scene_detection.enabled = True
     if vision:
         cfg.vision.enabled = True
+    if summary_provider is not None:
+        cfg.summary.provider = summary_provider
+    if summary_model is not None:
+        cfg.summary.model = summary_model
+    if vision_provider is not None:
+        cfg.vision.provider = vision_provider
+    if vision_model is not None:
+        cfg.vision.model = vision_model
     if max_frames is not None:
         cfg.vision.max_frames = max_frames
     if max_image_width is not None:
         cfg.vision.max_image_width = max_image_width
+    if no_llm_cache:
+        cfg.llm_cache.mode = "off"
+    if refresh_llm_cache:
+        cfg.llm_cache.mode = "refresh"
     outputs = run_pipeline(
         input_file=input_file,
         output_dir=output,
@@ -119,6 +167,9 @@ def run(
     typer.echo("pipeline outputs:")
     for name, path in outputs.items():
         typer.echo(f"- {name}: {path}")
+    run_status = json.loads(outputs["run_status"].read_text(encoding="utf-8"))
+    if not skip_summary and run_status.get("summary", {}).get("status") == "failed":
+        raise typer.Exit(code=1)
 
 
 def _duration_delta(left: dict, right: dict) -> float | None:

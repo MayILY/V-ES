@@ -5,7 +5,7 @@ from typing import Any, Callable
 
 from .config import SceneDetectionConfig
 
-SceneDetector = Callable[[Path, SceneDetectionConfig], list[dict[str, Any]]]
+SceneDetector = Callable[[Path, dict[str, Any], SceneDetectionConfig], list[dict[str, Any]]]
 
 
 def detect_scenes(
@@ -21,7 +21,7 @@ def detect_scenes(
         return _fallback_whole_video(metadata, "scene_detection_disabled")
 
     try:
-        scenes = (detector or _detect_with_pyscenedetect)(input_file, config)
+        scenes = (detector or _detect_with_pyscenedetect)(input_file, metadata, config)
     except ImportError as exc:
         return _fallback_whole_video(metadata, "pyscenedetect_unavailable", str(exc))
     except Exception as exc:
@@ -33,24 +33,57 @@ def detect_scenes(
     return {
         "status": "ok",
         "mode": "pyscenedetect",
+        "detector": config.detector,
         "threshold": config.threshold,
+        "adaptive_threshold": config.adaptive_threshold,
         "min_scene_len_sec": config.min_scene_len_sec,
         "scenes": _normalize_scenes(scenes, metadata, config.min_scene_len_sec),
     }
 
 
-def _detect_with_pyscenedetect(input_file: Path, config: SceneDetectionConfig) -> list[dict[str, Any]]:
+def _detect_with_pyscenedetect(
+    input_file: Path,
+    metadata: dict[str, Any],
+    config: SceneDetectionConfig,
+) -> list[dict[str, Any]]:
     try:
-        from scenedetect import ContentDetector, detect  # type: ignore
+        from scenedetect import AdaptiveDetector, ContentDetector, detect  # type: ignore
     except Exception as exc:
         raise ImportError(exc) from exc
 
-    detector = ContentDetector(threshold=config.threshold)
-    raw_scenes = detect(str(input_file), detector)
+    scene_detector = create_scene_detector(ContentDetector, AdaptiveDetector, metadata, config)
+    raw_scenes = detect(str(input_file), scene_detector)
     scenes = []
     for start, end in raw_scenes:
         scenes.append({"start": _timecode_seconds(start), "end": _timecode_seconds(end)})
     return scenes
+
+
+def create_scene_detector(
+    content_detector_cls: Any,
+    adaptive_detector_cls: Any,
+    metadata: dict[str, Any],
+    config: SceneDetectionConfig,
+) -> Any:
+    min_scene_len = min_scene_len_frames(metadata, config)
+    detector = config.detector.lower().strip()
+    if detector == "content":
+        return content_detector_cls(threshold=config.threshold, min_scene_len=min_scene_len)
+    if detector == "adaptive":
+        return adaptive_detector_cls(
+            adaptive_threshold=config.adaptive_threshold,
+            min_scene_len=min_scene_len,
+            window_width=config.window_width,
+            min_content_val=config.min_content_val,
+        )
+    raise ValueError(f"Unsupported scene detector: {config.detector}. Use 'content' or 'adaptive'.")
+
+
+def min_scene_len_frames(metadata: dict[str, Any], config: SceneDetectionConfig) -> int:
+    fps = float(metadata.get("fps") or 0.0)
+    if fps <= 0:
+        return max(1, int(round(config.min_scene_len_sec)))
+    return max(1, int(round(config.min_scene_len_sec * fps)))
 
 
 def _fallback_whole_video(metadata: dict[str, Any], reason: str, error: str | None = None) -> dict[str, Any]:
